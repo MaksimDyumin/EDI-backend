@@ -16,8 +16,14 @@ Including another URLconf
 """
 from django.contrib import admin
 from django.urls import path, include
-from rest.views import DocumentsViewsSet
+
 from rest_framework import routers
+from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
+
+from rest.views import (DocumentsViewsSet, SignaturesView, 
+                        SignatureDownloadView, UsersView,
+                        ProfileView)
+
 
 router = routers.SimpleRouter()
 router.register(r'documents', DocumentsViewsSet, basename='document')
@@ -26,6 +32,12 @@ router.register(r'documents', DocumentsViewsSet, basename='document')
 # domains_router.register(r'nameservers', NameserverViewSet, basename='domain-nameservers'
 
 urlpatterns = [
-    # path('documents/', DocumentsViewsSet.as_view()),
+    path('documents/<int:pk>/signatures/', SignaturesView.as_view()),
+    path('signatures/<int:pk>/', SignatureDownloadView.as_view()),
+    path('users/', UsersView.as_view()),
+    path('profile/', ProfileView.as_view()),
+    path('token/', TokenObtainPairView.as_view(), name='token_obtain_pair'),
+    path('token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
     path(r'', include(router.urls)),
+    
 ]

@@ -7,18 +7,17 @@ class User(AbstractUser):
     department = models.CharField(max_length=240, blank=True)
     job_title = models.CharField(max_length=240, blank=True)
 
-    # def make_friends(self, other):
-    #     self.friends.add(other)
-    #     self.save()
-    #     other.friends.add(self)
-    #     other.save()
-
 class Document(models.Model):
+    WAIT_FIX = "Wait_Fix"
+    WAIT_PROCESSING = "Wait_Processing"
+    REJCTCTED = "Rejected"
+    COMPLETE = "Complete"
+    
     STATUS_DOCUMENT_CHOICES = [
-        ("Wait_Processing", "Ожидает обработки"),
-        ("Wait_Fix", "Ожидает исправления"),
-        ("Rejected", "Отклонен"),
-        ("Complete", "Завершен"),
+        (WAIT_PROCESSING, "Ожидает обработки"),
+        (WAIT_FIX, "Ожидает исправления"),
+        (REJCTCTED, "Отклонен"),
+        (COMPLETE, "Завершен"),
     ]
 
     name = models.CharField(max_length=120, blank=True)
@@ -51,4 +50,13 @@ class Signature(models.Model):
         "Document",
         on_delete=models.CASCADE,
         related_name='signatures'
+    )
+
+class Comment(models.Model):
+    created_at = models.DateTimeField(auto_now_add=True)
+    text = models.TextField()
+    document = models.ForeignKey(
+        "Document",
+        on_delete=models.CASCADE,
+        related_name='comments'
     )
