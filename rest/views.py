@@ -7,7 +7,7 @@ from rest_framework.generics import ListCreateAPIView, RetrieveAPIView, ListAPIV
 from rest_framework import mixins
 from rest_framework.decorators import action
 from rest_framework.response import Response
-from rest_framework.exceptions import NotFound
+from rest_framework.exceptions import NotFound, ParseError
 from rest_framework.permissions import IsAuthenticated
 
 from rest.models import Document, Signature, User
@@ -114,8 +114,14 @@ class DocumentsViewsSet(mixins.CreateModelMixin,
     def send_fixes(self, request, pk):
         document = self.get_user_document(pk, creator=request.user)
         document.status = Document.WAIT_PROCESSING
-        comment_serializer = self.get_serializer(data=request.data)
-        comment_serializer.is_valid(raise_exception=True)
+        upload_serializer = self.get_serializer(document, data=request.data)
+        upload_serializer.is_valid(raise_exception=True)
+        doc_creator = document.creator
+        doc_recipient = document.recipient
+        upload_serializer.save(creator=doc_creator, recipient=doc_recipient)
+        
+        document.signatures.all().delete()
+        document.name = upload_serializer.initial_data['file'].name
         document.save()
         return Response("Document was fixed")
     
@@ -125,10 +131,12 @@ class SignaturesView(ListCreateAPIView):
 
     def get_queryset(self):
         user = self.request.user
-        return Signature.objects.filter(Q(creator=user) | (Q(document__creator=user) | Q(document__recipient=user)))
+        return Signature.objects.filter(document=self.kwargs['pk'])
     
     def perform_create(self, serializer):
-        serializer.save(creator=self.request.user)
+        if Signature.objects.filter(creator=self.request.user, document_id=self.kwargs['pk']).exists():
+            raise ParseError("Пользователь уже создал подпись для этого документа!")
+        serializer.save(creator=self.request.user, document_id=self.kwargs['pk'])
 
 class SignatureDownloadView(RetrieveAPIView):
     serializer_class = SignaturesSerializer
@@ -151,7 +159,11 @@ class SignatureDownloadView(RetrieveAPIView):
 class UsersView(ListAPIView):
     serializer_class = UserSerializer
     permission_classes = [IsAuthenticated]
-    queryset = User.objects.all()
+    # queryset = User.objects.all()
+
+    def get_queryset(self):
+        self_id = self.request.user.id
+        return User.objects.all().exclude(Q(id=self_id) | Q(is_superuser=True) | Q(is_staff=True))
 
 class ProfileView(RetrieveAPIView):
     serializer_class = UserSerializer
@@ -159,8 +171,3 @@ class ProfileView(RetrieveAPIView):
 
     def get_object(self):
         return self.request.user
-
-    
-
-
-    

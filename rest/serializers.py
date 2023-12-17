@@ -39,7 +39,7 @@ class AwaitFixesSerializer(ModelSerializer):
 class UploadDocumentSerializer(ModelSerializer):
     class Meta:
         model = Document
-        fields = ['id', 'file', 'updated_at']
+        fields = ['id', 'file', 'updated_at', 'name']
 
 class SignaturesSerializer(ModelSerializer):
     class Meta:
@@ -47,9 +47,3 @@ class SignaturesSerializer(ModelSerializer):
         fields = ['id', 'created_at', 'file', 'creator', 'document']
 
         read_only_fields = ['creator']
-
-
-
-
-        
-    
